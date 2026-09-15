@@ -19,7 +19,7 @@ HTML, CSS ve JavaScript kullanılarak geliştirilmiş web tabanlı Öğrenci Bil
 
 ## Kullanılan Teknolojiler
 
-- HTML5
+- HTML5 
 - CSS3
 - JavaScript
 - LocalStorage
