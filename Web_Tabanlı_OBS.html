@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gelişmiş OBS Sistemi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-blue: #0056b3;
+            --secondary-orange: #fd7e14;
+            --dark-navy: #001f3f;
+            --light-bg: #f4f7f6;
+            --white: #ffffff;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
+        body {
+            background: linear-gradient(135deg, var(--dark-navy) 0%, var(--primary-blue) 100%);
+            display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px;
+        }
+
+        .container {
+            background: var(--white); width: 100%; max-width: 1100px; border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4); padding: 40px; animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        h2 { color: var(--dark-navy); text-align: center; margin-bottom: 25px; border-bottom: 3px solid var(--secondary-orange); padding-bottom: 10px; }
+        h3 { margin-top: 25px; color: var(--primary-blue); border-left: 5px solid var(--secondary-orange); padding-left: 10px; }
+
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; color: var(--dark-navy); }
+        input, select { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; transition: 0.3s; }
+        input:focus { border-color: var(--secondary-orange); outline: none; }
+        input[readonly] { background-color: #f1f1f1; color: var(--primary-blue); font-weight: bold; }
+
+        #teacherPasswordSection { display: none; }
+
+        .btn {
+            background: var(--primary-blue); color: white; padding: 14px; border: none;
+            border-radius: 8px; cursor: pointer; font-weight: 600; width: 100%;
+            transition: 0.3s; margin-top: 10px; text-transform: uppercase;
+        }
+        .btn:hover { background: var(--dark-navy); transform: translateY(-2px); }
+        .btn-orange { background: var(--secondary-orange); }
+        .btn-sm { padding: 5px 10px; font-size: 11px; width: auto; margin: 2px; }
+        .btn-danger { background: var(--danger); }
+        .btn-warning { background: var(--warning); color: black; }
+
+        .page { display: none; }
+        .page.active { display: block; }
+
+        .role-selection { display: flex; gap: 20px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+        .role-card {
+            border: 3px solid #eee; padding: 25px; border-radius: 15px; cursor: pointer;
+            text-align: center; width: 200px; transition: 0.3s;
+        }
+        .role-card:hover { border-color: var(--secondary-orange); background: #fdfdfd; transform: scale(1.05); }
+        .role-card i { font-size: 3rem; color: var(--primary-blue); margin-bottom: 10px; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; font-size: 0.9rem; }
+        th, td { padding: 12px; border: 1px solid #eee; text-align: center; }
+        th { background: var(--dark-navy); color: white; }
+        
+        .pass { color: var(--success); font-weight: bold; }
+        .fail { color: var(--danger); font-weight: bold; }
+        .frozen-row { background-color: #ffe8e8 !important; opacity: 0.7; }
+        .agno-badge { background: var(--dark-navy); color: white; padding: 10px 25px; border-radius: 50px; display: inline-block; font-size: 1.2rem; margin-top: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+
+        .nav-link { color: var(--primary-blue); cursor: pointer; text-align: center; margin-top: 20px; display: block; font-weight: bold; text-decoration: underline; }
+        
+        .lesson-selector { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .lesson-tab { padding: 8px 15px; background: #e0e0e0; border-radius: 5px; cursor: pointer; white-space: nowrap; font-size: 0.9rem; transition: 0.2s; }
+        .lesson-tab.active { background: var(--secondary-orange); color: white; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <div id="loginPage" class="page active">
+        <h2><i class="fas fa-university"></i> Öğrenci Bilgi Sistemi</h2>
+        <div class="form-group">
+            <label id="loginLabel">TC No veya Öğrenci No</label>
+            <input type="text" id="loginId" placeholder="Sisteme kayıtlı numaranız...">
+        </div>
+        <div class="form-group">
+            <label>Giriş Türü</label>
+            <select id="loginRole" onchange="toggleLoginPassword()">
+                <option value="student">Öğrenci Girişi</option>
+                <option value="teacher">Öğretmen Girişi / Admin</option>
+            </select>
+        </div>
+        <div class="form-group" id="teacherPasswordSection">
+            <label>Şifre</label>
+            <input type="password" id="loginPassword" placeholder="Şifrenizi giriniz...">
+        </div>
+        <button class="btn" onclick="login()">Giriş Yap</button>
+        <p class="nav-link" onclick="showPage('roleSelectPage')">Yeni Kayıt Oluştur</p>
+    </div>
+
+    <div id="roleSelectPage" class="page">
+        <h2>Kayıt Türü Seçiniz</h2>
+        <div class="role-selection">
+            <div class="role-card" onclick="openStudentRegister()">
+                <i class="fas fa-user-graduate"></i><p>Öğrenci</p>
+            </div>
+            <div class="role-card" onclick="openTeacherRegister()">
+                <i class="fas fa-chalkboard-teacher"></i><p>Öğretmen</p>
+            </div>
+        </div>
+        <p class="nav-link" onclick="showPage('loginPage')">Giriş Ekranına Dön</p>
+    </div>
+
+    <div id="studentRegPage" class="page">
+        <h2>Öğrenci Kayıt</h2>
+        <div class="form-group"><label>Öğrenci no (Otomatik)</label><input type="text" id="sGeneratedId" readonly></div>
+        <div class="form-group"><label>Ad Soyad</label><input type="text" id="sName"></div>
+        <div class="form-group"><label>TC Kimlik No</label><input type="text" id="sTc"></div>
+        <div class="form-group"><label>Telefon Numarası</label><input type="tel" id="sPhone" placeholder="05XX XXX XX XX"></div>
+        <div class="form-group"><label>Doğum Tarihi</label><input type="date" id="sBirth"></div>
+        <div class="form-group">
+            <label>Bölüm</label>
+            <select id="sDept">
+                <option value="Bilgisayar Programcılığı">Bilgisayar Programcılığı</option>
+                <option value="Aşçılık Programı">Aşçılık Programı</option>
+                <option value="Mekatronik Programı">Mekatronik Programı</option>
+                <option value="Çocuk Gelişimi Programı">Çocuk Gelişimi Programı</option>
+            </select>
+        </div>
+        <button class="btn btn-orange" onclick="submitStudent()">Kaydı Tamamla</button>
+        <p class="nav-link" onclick="showPage('loginPage')">İptal</p>
+    </div>
+
+    <div id="teacherRegPage" class="page">
+        <h2>Öğretmen Kayıt</h2>
+        <div class="form-group"><label>Ad Soyad</label><input type="text" id="tName"></div>
+        <div class="form-group"><label>TC Kimlik No (Giriş ID)</label><input type="text" id="tTc"></div>
+        <div class="form-group"><label>Şifre (4-8 hane)</label><input type="password" id="tPass" maxlength="8"></div>
+        <div class="form-group"><label>Telefon Numarası</label><input type="tel" id="tPhone" placeholder="05XX XXX XX XX"></div>
+        <div class="form-group">
+            <label>Bölüm</label>
+            <select id="tDept" onchange="updateTeacherLessons()">
+                <option value="Bilgisayar Programcılığı">Bilgisayar Programcılığı</option>
+                <option value="Aşçılık Programı">Aşçılık Programı</option>
+                <option value="Mekatronik Programı">Mekatronik Programı</option>
+                <option value="Çocuk Gelişimi Programı">Çocuk Gelişimi Programı</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Verilecek Dersler (Ctrl tuşuyla birden fazla seçin)</label>
+            <select id="tLessons" multiple style="height: 120px;"></select>
+        </div>
+        <button class="btn btn-orange" onclick="submitTeacher()">Kaydı Tamamla</button>
+        <p class="nav-link" onclick="showPage('loginPage')">İptal</p>
+    </div>
+
+    <div id="teacherDashboard" class="page">
+        <h2 id="tWelcome">Öğretmen Paneli</h2>
+        <div id="tInfoSub" style="text-align: center; margin-bottom: 10px; color: var(--primary-blue); font-weight: bold;"></div>
+        <div class="lesson-selector" id="tLessonTabs"></div>
+        <div id="gradeArea">
+            <h4 id="activeLessonName" style="margin-bottom: 10px; color: var(--secondary-orange);">Ders Seçiniz</h4>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead><tr><th>Öğrenci No</th><th>Ad Soyad</th><th>Vize</th><th>Final</th><th>İşlem</th></tr></thead>
+                    <tbody id="studentGradeList"></tbody>
+                </table>
+            </div>
+        </div>
+        <button class="btn" style="margin-top:20px" onclick="logout()">Güvenli Çıkış</button>
+    </div>
+
+    <div id="studentDashboard" class="page">
+        <h2 id="sWelcome">Öğrenci Paneli</h2>
+        <div id="studentGradesTable" style="overflow-x: auto;"></div>
+        <div style="text-align: center; margin-top: 20px;">
+            <div class="agno-badge" id="agnoDisplay">AGNO: 0.00 / 100</div>
+        </div>
+        <button class="btn" onclick="logout()">Güvenli Çıkış</button>
+    </div>
+
+    <div id="adminDashboard" class="page">
+        <h2>Sistem Yönetim Paneli (Admin)</h2>
+        <h3>Öğretmen Listesi</h3>
+        <div style="overflow-x: auto;">
+            <table>
+                <thead><tr><th>Ad Soyad</th><th>TC/Giriş ID</th><th>Bölüm</th><th>Dersler</th><th>Durum</th><th>İşlem</th></tr></thead>
+                <tbody id="adminTeacherList"></tbody>
+            </table>
+        </div>
+        <h3>Öğrenci Listesi</h3>
+        <div style="overflow-x: auto;">
+            <table>
+                <thead><tr><th>No</th><th>Ad Soyad</th><th>Bölüm</th><th>Telefon</th><th>Durum</th><th>İşlem</th></tr></thead>
+                <tbody id="adminStudentList"></tbody>
+            </table>
+        </div>
+        <div id="adminDetailSection" style="margin-top:30px; display:none; border:2px solid var(--secondary-orange); padding:20px; border-radius:15px;">
+            <h4 id="adminDetailTitle">Öğrenci Detayı</h4>
+            <div id="adminDetailContent"></div>
+            <button class="btn btn-sm" onclick="document.getElementById('adminDetailSection').style.display='none'">Kapat</button>
+        </div>
+        <button class="btn" style="margin-top:20px" onclick="logout()">Güvenli Çıkış</button>
+    </div>
+
+</div>
+
+<script>
+    // --- VERİ SAKLAMA MOTORU ---
+    function saveData() {
+        localStorage.setItem('obs_students', JSON.stringify(students));
+        localStorage.setItem('obs_teachers', JSON.stringify(teachers));
+        localStorage.setItem('obs_takenLessons', JSON.stringify(takenLessons));
+    }
+
+    function loadData() {
+        const s = localStorage.getItem('obs_students');
+        const t = localStorage.getItem('obs_teachers');
+        const l = localStorage.getItem('obs_takenLessons');
+        if(s) students = JSON.parse(s);
+        if(t) teachers = JSON.parse(t);
+        if(l) takenLessons = JSON.parse(l);
+    }
+
+    const departments = {
+        "Bilgisayar Programcılığı": ["Web Tasarımı", "Veritabanı", "Nesne Tabanlı Programlama", "Ağ Güvenliği"],
+        "Aşçılık Programı": ["Mutfak Teknikleri", "Dünya Mutfağı", "Pastacılık", "Gıda Hijyeni"],
+        "Mekatronik Programı": ["Robotik Kontrol", "Sensör Teknolojisi", "Devre Analizi", "Mikroişlemciler"],
+        "Çocuk Gelişimi Programı": ["Çocuk Psikolojisi", "Okul Öncesi Eğitim", "Oyun Terapisi", "Çocuk Sağlığı"]
+    };
+
+    let students = [];
+    let teachers = [];
+    let takenLessons = [];
+    let currentUser = null;
+    let activeLesson = null;
+
+    // Sayfa yüklenince verileri çek
+    window.onload = loadData;
+
+    function showPage(id) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function toggleLoginPassword() {
+        const role = document.getElementById('loginRole').value;
+        const passSection = document.getElementById('teacherPasswordSection');
+        const loginLabel = document.getElementById('loginLabel');
+        if (role === 'teacher') {
+            passSection.style.display = 'block';
+            loginLabel.innerText = "Kullanıcı Adı veya TC No";
+        } else {
+            passSection.style.display = 'none';
+            loginLabel.innerText = "TC No veya Öğrenci No";
+        }
+    }
+
+    function openStudentRegister() {
+        document.getElementById('sGeneratedId').value = Math.floor(100000 + Math.random() * 900000);
+        showPage('studentRegPage');
+    }
+
+    function submitStudent() {
+        const dept = document.getElementById('sDept').value;
+        const tc = document.getElementById('sTc').value;
+        const phone = document.getElementById('sPhone').value;
+        if(students.some(x => x.tc === tc) || teachers.some(x => x.id === tc)) return alert("Bu TC zaten kayıtlı!");
+        if(students.some(x => x.phone === phone) || teachers.some(x => x.phone === phone)) return alert("Bu telefon zaten kayıtlı!");
+        const s = {
+            id: document.getElementById('sGeneratedId').value,
+            name: document.getElementById('sName').value,
+            tc: tc, phone: phone, birth: document.getElementById('sBirth').value,
+            dept: dept, courseGrades: {}, isFrozen: false
+        };
+        if(!s.name || !s.tc || !s.phone) return alert("Lütfen tüm alanları doldurun!");
+        departments[dept].forEach(lesson => { s.courseGrades[lesson] = { vize: 0, final: 0, girildi: false }; });
+        students.push(s);
+        saveData(); // Kaydet
+        alert("Kayıt Başarılı! Öğrenci No: " + s.id);
+        showPage('loginPage');
+    }
+
+    function openTeacherRegister() {
+        showPage('teacherRegPage');
+        updateTeacherLessons();
+    }
+
+    function updateTeacherLessons() {
+        const dept = document.getElementById('tDept').value;
+        const lessonSelect = document.getElementById('tLessons');
+        lessonSelect.innerHTML = "";
+        departments[dept].forEach(l => {
+            if(!takenLessons.includes(l)) lessonSelect.innerHTML += `<option value="${l}">${l}</option>`;
+            else lessonSelect.innerHTML += `<option value="${l}" disabled>${l} (Dolu)</option>`;
+        });
+    }
+
+    function submitTeacher() {
+        const selected = Array.from(document.getElementById('tLessons').selectedOptions).filter(o => !o.disabled).map(o => o.value);
+        const pass = document.getElementById('tPass').value;
+        const tc = document.getElementById('tTc').value;
+        const phone = document.getElementById('tPhone').value;
+        if(teachers.some(x => x.id === tc) || students.some(x => x.tc === tc)) return alert("Bu TC zaten kayıtlı!");
+        if(teachers.some(x => x.phone === phone) || students.some(x => x.phone === phone)) return alert("Bu telefon zaten kayıtlı!");
+        if(pass.length < 4 || pass.length > 8) return alert("Şifre 4-8 hane olmalı!");
+        const t = { id: tc, password: pass, name: document.getElementById('tName').value, phone: phone, dept: document.getElementById('tDept').value, lessons: selected, isFrozen: false };
+        if(!t.name || !t.id || t.lessons.length === 0) return alert("Eksik bilgi!");
+        teachers.push(t);
+        takenLessons.push(...selected);
+        saveData(); // Kaydet
+        alert("Öğretmen Kaydı Başarılı!");
+        showPage('loginPage');
+    }
+
+    function login() {
+        const id = document.getElementById('loginId').value;
+        const role = document.getElementById('loginRole').value;
+        const pass = document.getElementById('loginPassword').value;
+        if (role === 'teacher' && id === 'admins' && pass === '171075') { loadAdminPanel(); return; }
+        if(role === 'student') {
+            const s = students.find(x => x.id === id || x.tc === id);
+            if(s) { if(s.isFrozen) return alert("Kaydınız dondurulmuştur!"); currentUser = s; loadStudentPanel(); }
+            else alert("Öğrenci bulunamadı!");
+        } else {
+            const t = teachers.find(x => x.id === id);
+            if(t) { if(t.isFrozen) return alert("Hesabınız dondurulmuştur!"); if(t.password === pass) { currentUser = t; loadTeacherPanel(); } else alert("Hatalı şifre!"); }
+            else alert("Öğretmen bulunamadı!");
+        }
+    }
+
+    function loadAdminPanel() {
+        const tList = document.getElementById('adminTeacherList');
+        const sList = document.getElementById('adminStudentList');
+        tList.innerHTML = ""; sList.innerHTML = "";
+        teachers.forEach((t, index) => {
+            tList.innerHTML += `<tr class="${t.isFrozen ? 'frozen-row' : ''}"><td>${t.name}</td><td>${t.id}</td><td>${t.dept}</td><td>${t.lessons.join(", ")}</td><td>${t.isFrozen ? 'Donduruldu' : 'Aktif'}</td><td><button class="btn btn-sm btn-warning" onclick="toggleFreeze('teacher', ${index})">${t.isFrozen ? 'Çöz' : 'Dondur'}</button><button class="btn btn-sm btn-danger" onclick="deleteRecord('teacher', ${index})">Sil</button></td></tr>`;
+        });
+        students.forEach((s, index) => {
+            sList.innerHTML += `<tr class="${s.isFrozen ? 'frozen-row' : ''}"><td>${s.id}</td><td>${s.name}</td><td>${s.dept}</td><td>${s.phone}</td><td>${s.isFrozen ? 'Donduruldu' : 'Aktif'}</td><td><button class="btn btn-sm btn-orange" onclick="viewStudentAdmin(${index})">Detay</button><button class="btn btn-sm btn-warning" onclick="toggleFreeze('student', ${index})">${s.isFrozen ? 'Çöz' : 'Dondur'}</button><button class="btn btn-sm btn-danger" onclick="deleteRecord('student', ${index})">Sil</button></td></tr>`;
+        });
+        showPage('adminDashboard');
+    }
+
+    function toggleFreeze(type, index) {
+        if(type === 'teacher') teachers[index].isFrozen = !teachers[index].isFrozen;
+        else students[index].isFrozen = !students[index].isFrozen;
+        saveData(); loadAdminPanel();
+    }
+
+    function deleteRecord(type, index) {
+        if(!confirm("Emin misiniz?")) return;
+        if(type === 'teacher') { takenLessons = takenLessons.filter(l => !teachers[index].lessons.includes(l)); teachers.splice(index, 1); }
+        else students.splice(index, 1);
+        saveData(); loadAdminPanel();
+    }
+
+    function viewStudentAdmin(index) {
+        const s = students[index];
+        const content = document.getElementById('adminDetailContent');
+        document.getElementById('adminDetailTitle').innerText = s.name + " Notları";
+        let h = `<table><thead><tr><th>Ders</th><th>Vize</th><th>Final</th><th>Ort</th></tr></thead><tbody>`;
+        for(let l in s.courseGrades) { const g = s.courseGrades[l]; h += `<tr><td>${l}</td><td>${g.vize}</td><td>${g.final}</td><td>${g.girildi ? (g.vize*0.4+g.final*0.6).toFixed(1) : '-'}</td></tr>`; }
+        content.innerHTML = h + `</tbody></table>`;
+        document.getElementById('adminDetailSection').style.display = 'block';
+    }
+
+    function loadTeacherPanel() {
+        document.getElementById('tWelcome').innerText = "Sn. " + currentUser.name;
+        document.getElementById('tInfoSub').innerText = currentUser.dept;
+        const tabs = document.getElementById('tLessonTabs'); tabs.innerHTML = "";
+        currentUser.lessons.forEach((l, i) => {
+            const d = document.createElement('div'); d.className = 'lesson-tab'; d.innerText = l;
+            d.onclick = () => selectLesson(l, d); tabs.appendChild(d); if(i===0) selectLesson(l, d);
+        });
+        showPage('teacherDashboard');
+    }
+
+    function selectLesson(l, e) {
+        activeLesson = l; document.querySelectorAll('.lesson-tab').forEach(t => t.classList.remove('active')); e.classList.add('active');
+        document.getElementById('activeLessonName').innerText = l;
+        const b = document.getElementById('studentGradeList'); b.innerHTML = "";
+        students.filter(s => s.dept === currentUser.dept).forEach(s => {
+            const g = s.courseGrades[l];
+            b.innerHTML += `<tr><td>${s.id}</td><td>${s.name}</td><td><input type="number" id="v_${s.id}" value="${g.vize}" style="width:50px"></td><td><input type="number" id="f_${s.id}" value="${g.final}" style="width:50px"></td><td><button class="btn btn-orange btn-sm" onclick="saveGrade('${s.id}')">Kaydet</button></td></tr>`;
+        });
+    }
+
+    function saveGrade(sid) {
+        const v = parseFloat(document.getElementById('v_'+sid).value);
+        const f = parseFloat(document.getElementById('f_'+sid).value);
+        const s = students.find(x => x.id === sid);
+        s.courseGrades[activeLesson] = { vize: v, final: f, girildi: true };
+        saveData(); alert("Kaydedildi.");
+    }
+
+    function loadStudentPanel() {
+        document.getElementById('sWelcome').innerText = currentUser.name;
+        const d = document.getElementById('studentGradesTable');
+        let h = `<table><thead><tr><th>Ders</th><th>Vize</th><th>Final</th><th>Ort</th><th>Harf</th></tr></thead><tbody>`;
+        let tOrt = 0, count = 0;
+        for(let l in currentUser.courseGrades) {
+            const g = currentUser.courseGrades[l]; const o = (g.vize*0.4+g.final*0.6);
+            if(g.girildi) { tOrt+=o; count++; }
+            h += `<tr><td>${l}</td><td>${g.girildi?g.vize:'-'}</td><td>${g.girildi?g.final:'-'}</td><td>${g.girildi?o.toFixed(1):'-'}</td><td>${g.girildi?(o>=50?'Geçti':'Kaldı'):'-'}</td></tr>`;
+        }
+        d.innerHTML = h + `</tbody></table>`;
+        document.getElementById('agnoDisplay').innerText = "AGNO: " + (count>0?(tOrt/count).toFixed(2):'0.00');
+        showPage('studentDashboard');
+    }
+
+    function logout() { showPage('loginPage'); }
+</script>
+</body>
+</html>
